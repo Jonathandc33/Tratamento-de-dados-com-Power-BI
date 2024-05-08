@@ -1,0 +1,14 @@
+let
+    Fonte = Excel.Workbook(File.Contents(caminhoPasta & "olist_pedidos.xlsx"), null, true),
+    olist_orders_dataset_Sheet = Fonte{[Item="olist_orders_dataset",Kind="Sheet"]}[Data],
+    #"Cabeçalhos Promovidos" = Table.PromoteHeaders(olist_orders_dataset_Sheet, [PromoteAllScalars=true]),
+    #"Linhas Superiores Removidas" = Table.Skip(#"Cabeçalhos Promovidos",1),
+    #"Cabeçalhos Promovidos1" = Table.PromoteHeaders(#"Linhas Superiores Removidas", [PromoteAllScalars=true]),
+    #"Tipo Alterado1" = Table.TransformColumnTypes(#"Cabeçalhos Promovidos1",{{"order_id", type text}, {"customer_id", type text}, {"order_status", type text}, {"order_purchase_timestamp", type datetime}, {"order_approved_at", type datetime}, {"order_delivered_carrier_date", type datetime}, {"order_delivered_customer_date", type datetime}, {"order_estimated_delivery_date", type datetime}}),
+    #"Texto Extraído Após o Delimitador" = Table.TransformColumns(#"Tipo Alterado1", {{"order_status", each Text.AfterDelimiter(_, "#"), type text}}),
+    #"Consultas Mescladas" = Table.NestedJoin(#"Texto Extraído Após o Delimitador", {"order_status"}, tradução, {"Inglês"}, "tradução", JoinKind.LeftOuter),
+    #"tradução Expandido" = Table.ExpandTableColumn(#"Consultas Mescladas", "tradução", {"Português "}, {"Português "}),
+    #"Colunas Removidas" = Table.RemoveColumns(#"tradução Expandido",{"order_status", "customer_id"}),
+    #"Colunas Renomeadas" = Table.RenameColumns(#"Colunas Removidas",{{"Português ", "Status"}, {"order_id", "Id Pedido"}, {"order_purchase_timestamp", "Data da Compra"}, {"order_approved_at", "Data da Aprovação"}, {"order_delivered_carrier_date", "Data Transportadora"}, {"order_delivered_customer_date", "Data da Entrega"}, {"order_estimated_delivery_date", "Data Estimada Entrega"}})
+in
+    #"Colunas Renomeadas"
